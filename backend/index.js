@@ -29,8 +29,30 @@ function extractName(text) {
 }
 
 /* =======================
-   CHAT ENDPOINT
+   ROUTES
 ======================= */
+
+// 1. GET CHAT HISTORY (This was missing!)
+app.get("/chat/history/:sessionId", (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    // Fetch messages for this session
+    const rows = all(
+      `SELECT sender, text FROM messages 
+       WHERE conversationId = ? 
+       ORDER BY id ASC`, 
+      [sessionId]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("History error:", err);
+    res.status(500).json({ error: "Could not fetch history" });
+  }
+});
+
+// 2. CHAT ENDPOINT
 app.post("/chat/message", async (req, res) => {
   try {
     const { message, sessionId } = req.body || {};
@@ -59,7 +81,7 @@ app.post("/chat/message", async (req, res) => {
       );
     }
 
-    // fetch stored name (FIXED: using get instead of all)
+    // fetch stored name
     const convo = get(
       `SELECT userName FROM conversations WHERE id = ?`,
       [conversationId]

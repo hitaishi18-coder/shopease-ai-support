@@ -7,22 +7,21 @@ function App() {
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState(null);
 
-  // 🔹 Load history on page load (FIX)
+  // Load history on page load
   useEffect(() => {
     const savedSessionId = localStorage.getItem("sessionId");
 
-    if (!savedSessionId) return;
-
-    setSessionId(savedSessionId);
-
-    fetch(`http://localhost:5000/chat/history/${savedSessionId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setMessages(data);
-        }
-      })
-      .catch(() => console.log("history load failed"));
+    if (savedSessionId) {
+      setSessionId(savedSessionId);
+      fetch(`http://localhost:5000/chat/history/${savedSessionId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setMessages(data);
+          }
+        })
+        .catch((err) => console.error("History load failed:", err));
+    }
   }, []);
 
   const handleSendMessage = async (text) => {
@@ -41,7 +40,6 @@ function App() {
 
       const data = await res.json();
 
-      // Persist sessionId
       if (data.sessionId) {
         setSessionId(data.sessionId);
         localStorage.setItem("sessionId", data.sessionId);
@@ -54,7 +52,7 @@ function App() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { sender: "ai", text: "Something went wrong." },
+        { sender: "ai", text: "Error: Could not connect to server." },
       ]);
     } finally {
       setIsTyping(false);
@@ -66,16 +64,15 @@ function App() {
       <div className="w-[95%] h-[90%] bg-white rounded-2xl shadow-lg flex p-4">
         <div className="flex-1 flex flex-col p-4">
 
-          {/* Header + New Chat */}
+          {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">MY AI BOT</h2>
-
             <button
               onClick={() => {
                 setMessages([]);
                 setIsTyping(false);
                 setSessionId(null);
-                localStorage.removeItem("sessionId"); // 🔥 clear session
+                localStorage.removeItem("sessionId");
               }}
               className="text-sm text-blue-600 hover:underline"
             >
@@ -83,10 +80,10 @@ function App() {
             </button>
           </div>
 
-          {/* Chat */}
+          {/* Chat Area */}
           <Chat messages={messages} isTyping={isTyping} />
 
-          {/* Input */}
+          {/* Input Area */}
           <div className="mt-4">
             <Input onSend={handleSendMessage} disabled={isTyping} />
           </div>
