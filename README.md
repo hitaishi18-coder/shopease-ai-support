@@ -61,7 +61,7 @@ project-root/
 
 ⚙️ Environment Setup
 1️⃣ Clone the Repository
-git clone <repo:hitaishi18-coder/shopease-ai-support >
+git clone <https://github.com/hitaishi18-coder/shopease-ai-support.git>
 cd project-root
 
 2️⃣ Backend Setup
