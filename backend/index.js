@@ -23,7 +23,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:3000",
       "https://shopease-ai-support.onrender.com", // optional (if frontend same domain)
-      "https://your-frontend.vercel.app",        // 🔁 replace with actual frontend
+      "https://shopease-ai-support.vercel.app",        // 🔁 replace with actual frontend
     ],
     methods: ["GET", "POST"],
     credentials: true,
