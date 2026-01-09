@@ -8,13 +8,32 @@ const { generateReply } = require("./groq");
 const app = express();
 
 /* =======================
+   ENV CONFIG
+======================= */
+const PORT = process.env.PORT || 5000;
+
+/* =======================
    MIDDLEWARE
 ======================= */
-app.use(cors());
+
+// ✅ CORS (local + deployed frontend)
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://shopease-ai-support.onrender.com", // optional (if frontend same domain)
+      "https://your-frontend.vercel.app",        // 🔁 replace with actual frontend
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 /* =======================
-   HEALTH CHECK ROUTE
+   HEALTH CHECK
 ======================= */
 app.get("/", (req, res) => {
   res.status(200).send("Backend API is running 🚀");
@@ -32,32 +51,31 @@ function extractName(text) {
    ROUTES
 ======================= */
 
-// 1. GET CHAT HISTORY (This was missing!)
+// ✅ CHAT HISTORY
 app.get("/chat/history/:sessionId", (req, res) => {
   try {
     const { sessionId } = req.params;
-    
-    // Fetch messages for this session
+
     const rows = all(
       `SELECT sender, text FROM messages 
        WHERE conversationId = ? 
-       ORDER BY id ASC`, 
+       ORDER BY id ASC`,
       [sessionId]
     );
 
-    res.json(rows);
+    res.json(rows || []);
   } catch (err) {
-    console.error("History error:", err);
+    console.error("❌ History error:", err);
     res.status(500).json({ error: "Could not fetch history" });
   }
 });
 
-// 2. CHAT ENDPOINT
+// ✅ CHAT MESSAGE
 app.post("/chat/message", async (req, res) => {
   try {
     const { message, sessionId } = req.body || {};
 
-    if (!message || !message.trim()) {
+    if (!message?.trim()) {
       return res.json({ reply: "Please enter a valid message." });
     }
 
@@ -96,7 +114,7 @@ app.post("/chat/message", async (req, res) => {
       [conversationId]
     );
 
-    const history = rows.reverse().map((m) => ({
+    const history = (rows || []).reverse().map((m) => ({
       role: m.sender === "user" ? "user" : "assistant",
       content: m.text,
     }));
@@ -124,7 +142,7 @@ app.post("/chat/message", async (req, res) => {
 
     res.json({ reply, sessionId: conversationId });
   } catch (err) {
-    console.error("Chat error:", err);
+    console.error("❌ Chat error:", err);
     res.status(500).json({ reply: "Something went wrong." });
   }
 });
@@ -134,6 +152,6 @@ app.post("/chat/message", async (req, res) => {
 ======================= */
 initDB();
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
