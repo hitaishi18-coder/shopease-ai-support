@@ -2,26 +2,32 @@ import { useState, useEffect } from "react";
 import Input from "./components/Input";
 import Chat from "./components/Chat";
 
+// ✅ Dynamic backend URL (local OR production)
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000";
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState(null);
 
-  // Load history on page load
+  // Load previous chat history
   useEffect(() => {
     const savedSessionId = localStorage.getItem("sessionId");
 
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-      fetch(`http://localhost:5000/chat/history/${savedSessionId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setMessages(data);
-          }
-        })
-        .catch((err) => console.error("History load failed:", err));
-    }
+    if (!savedSessionId) return;
+
+    setSessionId(savedSessionId);
+
+    fetch(`${API_BASE_URL}/chat/history/${savedSessionId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMessages(data);
+      })
+      .catch((err) =>
+        console.error("❌ History load failed:", err)
+      );
   }, []);
 
   const handleSendMessage = async (text) => {
@@ -29,9 +35,11 @@ function App() {
     setIsTyping(true);
 
     try {
-      const res = await fetch("http://localhost:5000/chat/message", {
+      const res = await fetch(`${API_BASE_URL}/chat/message`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           message: text,
           sessionId,
@@ -49,10 +57,14 @@ function App() {
         ...prev,
         { sender: "ai", text: data.reply },
       ]);
-    } catch {
+    } catch (err) {
+      console.error("❌ Server error:", err);
       setMessages((prev) => [
         ...prev,
-        { sender: "ai", text: "Error: Could not connect to server." },
+        {
+          sender: "ai",
+          text: "⚠️ Server unreachable. Please try again.",
+        },
       ]);
     } finally {
       setIsTyping(false);
@@ -70,7 +82,6 @@ function App() {
             <button
               onClick={() => {
                 setMessages([]);
-                setIsTyping(false);
                 setSessionId(null);
                 localStorage.removeItem("sessionId");
               }}
@@ -80,10 +91,10 @@ function App() {
             </button>
           </div>
 
-          {/* Chat Area */}
+          {/* Chat */}
           <Chat messages={messages} isTyping={isTyping} />
 
-          {/* Input Area */}
+          {/* Input */}
           <div className="mt-4">
             <Input onSend={handleSendMessage} disabled={isTyping} />
           </div>
