@@ -1,5 +1,11 @@
 const Database = require("better-sqlite3");
-const db = new Database("chat.db");
+const path = require("path");
+
+// Check if running on Hugging Face (or if a DB_PATH env var is set)
+// On HF, we will set DB_PATH to /data/chat.db
+const dbPath = process.env.DB_PATH || "chat.db";
+
+const db = new Database(dbPath);
 
 function initDB() {
   db.prepare(`

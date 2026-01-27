@@ -10,22 +10,37 @@ const app = express();
 /* =======================
    CONFIG
 ======================= */
-const PORT = process.env.PORT || 5000;
+// Hugging Face expects port 7860
+const PORT = process.env.PORT || 7860;
 
 /* =======================
    MIDDLEWARE
 ======================= */
-// Allow requests from your specific Vercel domain
+// Add your Frontend URL to this list or use an Env Variable
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://shopease-ai-support.vercel.app",
+  process.env.FRONTEND_URL // Allow dynamic frontend URL from env vars
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "https://shopease-ai-support.vercel.app",
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // Optional: Allow all origins for testing if you are having trouble
+        // callback(null, true); 
+        console.log("Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // Only needed if you plan to send cookies/headers
+    credentials: true,
   })
 );
 
@@ -35,7 +50,7 @@ app.use(express.json());
    HEALTH CHECK
 ======================= */
 app.get("/", (req, res) => {
-  res.send("Backend API is running 🚀");
+  res.send("Backend API is running on Hugging Face 🚀");
 });
 
 /* =======================
@@ -135,7 +150,6 @@ app.post("/chat/message", async (req, res) => {
     res.json({ reply, sessionId: conversationId });
   } catch (err) {
     console.error("Handler Error:", err);
-    // Return a JSON error so the frontend doesn't just crash on JSON parse
     res.status(500).json({ reply: "Server error occurred. Please try again." });
   }
 });
